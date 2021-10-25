@@ -22,6 +22,7 @@
 #ifndef SV_H
 #define SV_H
 
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -88,7 +89,7 @@ SV sv_trim(SV sv, char ch);
 // Combination of sv_ltrim_pred() and sv_rtrim_pred().
 //
 // Example:
-//   sv_trim(sv_cstr("69foo69", isdigit))         => "foo"
+//   sv_trim_pred(sv_cstr("69foo69", isdigit))    => "foo"
 SV sv_trim_pred(SV sv, bool (*predicate)(char ch));
 
 // Split a string view by the DELIM character.
@@ -101,7 +102,7 @@ SV sv_trim_pred(SV sv, bool (*predicate)(char ch));
 //   a                          => "bar"
 SV sv_split(SV *sv, char delim);
 
-// Like sv_split() but splits by a delimiter.
+// Like sv_split() but splits by a predicate function.
 //
 // Example:
 //   SV a = sv_cstr("foo0bar")
@@ -164,6 +165,14 @@ bool sv_suffix(SV sv, SV suffix);
 //   sv_find(sv_cstr("foo"), "o") => 1
 //   sv_find(sv_cstr("foo"), "a") => -1
 int sv_find(SV sv, char ch);
+
+// Read a file into a string view.
+//
+// Examples:
+//   SV contents = sv_read_file("foo.log");
+//   printf(SVFmt, SVArg(contents));
+//   free((char *) contents);
+SV sv_read_file(const char *path);
 
 #endif // SV_H
 
@@ -365,6 +374,42 @@ bool sv_suffix(SV sv, SV suffix)
     return sv.length >= suffix.length &&
         memcmp(sv.source + sv.length - suffix.length,
                suffix.source, suffix.length) == 0;
+}
+
+SV sv_read_file(const char *path)
+{
+    FILE *file = fopen(path, "r");
+    if (!file) {
+        fprintf(stderr, "error: could not read file '%s'", path);
+        exit(1);
+    }
+
+    if (fseek(file, 0, SEEK_END) < 0) {
+        fprintf(stderr, "error: could not read file '%s'", path);
+        exit(1);
+    }
+
+    long size = ftell(file);
+    if (size < 0) {
+        fprintf(stderr, "error: could not read file '%s'", path);
+        exit(1);
+    }
+
+    rewind(file);
+
+    char *contents = malloc(size);
+    if (!contents) {
+        fprintf(stderr, "error: could not allocate memory for file '%s'", path);
+        exit(1);
+    }
+
+    if (fread(contents, sizeof(char), size, file) != (size_t) size) {
+        fprintf(stderr, "error: could not read file '%s'", path);
+        exit(1);
+    }
+
+    fclose(file);
+    return sv_new(contents, size);
 }
 
 #endif // SV_IMPLEMENTATION
