@@ -380,18 +380,18 @@ SV sv_read_file(const char *path)
 {
     FILE *file = fopen(path, "r");
     if (!file) {
-        fprintf(stderr, "error: could not read file '%s'", path);
+        fprintf(stderr, "error: could not read file '%s'\n", path);
         exit(1);
     }
 
     if (fseek(file, 0, SEEK_END) < 0) {
-        fprintf(stderr, "error: could not read file '%s'", path);
+        fprintf(stderr, "error: could not read file '%s'\n", path);
         exit(1);
     }
 
     long size = ftell(file);
     if (size < 0) {
-        fprintf(stderr, "error: could not read file '%s'", path);
+        fprintf(stderr, "error: could not read file '%s'\n", path);
         exit(1);
     }
 
@@ -399,12 +399,12 @@ SV sv_read_file(const char *path)
 
     char *contents = malloc(size);
     if (!contents) {
-        fprintf(stderr, "error: could not allocate memory for file '%s'", path);
+        fprintf(stderr, "error: could not allocate memory for file '%s'\n", path);
         exit(1);
     }
 
     if (fread(contents, sizeof(char), size, file) != (size_t) size) {
-        fprintf(stderr, "error: could not read file '%s'", path);
+        fprintf(stderr, "error: could not read file '%s'\n", path);
         exit(1);
     }
 
