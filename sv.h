@@ -175,6 +175,8 @@ int sv_find(SV sv, char ch);
 //   free((char *) contents);
 SV sv_read_file(const char *path);
 
+void sv_advance(SV *sv, size_t count);
+
 ///////////////////////////////////////////////////////
 
 SV sv_new(const char *source, size_t length)
@@ -235,64 +237,56 @@ SV sv_split_pred(SV *sv, bool (*predicate)(char ch))
 
 SV sv_ltrim(SV sv, char ch)
 {
-    SV result = sv;
-
-    for (size_t i = 0; i < result.length; ++i) {
-        if (result.source[i] != ch) {
-            result.source += i;
-            result.length -= i;
+    for (size_t i = 0; i < sv.length; ++i) {
+        if (sv.source[i] != ch) {
+            sv.source += i;
+            sv.length -= i;
             break;
         }
     }
 
-    return result;
+    return sv;
 }
 
 SV sv_ltrim_pred(SV sv, bool (*predicate)(char ch))
 {
-    SV result = sv;
-
-    for (size_t i = 0; i < result.length; ++i) {
-        if (!predicate(result.source[i])) {
-            result.source += i;
-            result.length -= i;
+    for (size_t i = 0; i < sv.length; ++i) {
+        if (!predicate(sv.source[i])) {
+            sv.source += i;
+            sv.length -= i;
             break;
         }
     }
 
-    return result;
+    return sv;
 }
 
 SV sv_rtrim(SV sv, char ch)
 {
-    SV result = sv;
-
-    if (result.length) {
-        for (size_t i = result.length - 1; i > 0; --i) {
-            if (result.source[i] != ch) {
-                result.length = i + 1;
+    if (sv.length) {
+        for (size_t i = sv.length; i > 0; --i) {
+            if (sv.source[i - 1] != ch) {
+                sv.length = i;
                 break;
             }
         }
     }
 
-    return result;
+    return sv;
 }
 
 SV sv_rtrim_pred(SV sv, bool (*predicate)(char ch))
 {
-    SV result = sv;
-
-    if (result.length) {
-        for (size_t i = result.length - 1; i > 0; --i) {
-            if (!predicate(result.source[i])) {
-                result.length = i + 1;
+    if (sv.length) {
+        for (size_t i = sv.length; i > 0; --i) {
+            if (!predicate(sv.source[i - 1])) {
+                sv.length = i;
                 break;
             }
         }
     }
 
-    return result;
+    return sv;
 }
 
 SV sv_trim(SV sv, char ch)
@@ -408,6 +402,14 @@ SV sv_read_file(const char *path)
 
     fclose(file);
     return sv_new(contents, size);
+}
+
+void sv_advance(SV *sv, size_t count)
+{
+    if (count < sv->length) {
+        sv->source += count;
+        sv->length -= count;
+    }
 }
 
 #endif // SV_H
