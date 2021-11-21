@@ -175,10 +175,7 @@ int sv_find(SV sv, char ch);
 //   free((char *) contents);
 SV sv_read_file(const char *path);
 
-#endif // SV_H
-
-#ifndef SV_IMPLEMENTATION
-#define SV_IMPLEMENTATION
+///////////////////////////////////////////////////////
 
 SV sv_new(const char *source, size_t length)
 {
@@ -413,4 +410,4 @@ SV sv_read_file(const char *path)
     return sv_new(contents, size);
 }
 
-#endif // SV_IMPLEMENTATION
+#endif // SV_H
