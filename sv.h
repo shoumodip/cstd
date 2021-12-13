@@ -117,23 +117,22 @@ SV sv_split_pred(SV *sv, bool (*predicate)(char ch));
 //   SV a = sv_cstr("69text")
 //   int n
 //
-//   vs_parse_int(&a, &n) => true
+//   vs_parse_int(&a, &n) => 2
 //   n                    => 69
 //   a                    => "text"
 //
-//   vs_parse_int(&a, &n) => false
-//   n                    => 69
+//   vs_parse_int(&a, &n) => 0
 //   a                    => "text"
-bool sv_parse_int(SV *sv, int *dest);
+size_t sv_parse_int(SV *sv, int *dest);
 
 // Like sv_parse_int(), but parses longs instead.
-bool sv_parse_long(SV *sv, long *dest);
+size_t sv_parse_long(SV *sv, long *dest);
 
 // Like sv_parse_int(), but parses floats instead.
-bool sv_parse_float(SV *sv, float *dest);
+size_t sv_parse_float(SV *sv, float *dest);
 
 // Like sv_parse_int(), but parses doubles instead.
-bool sv_parse_double(SV *sv, double *dest);
+size_t sv_parse_double(SV *sv, double *dest);
 
 // Check if two SVs are equal.
 //
@@ -183,7 +182,7 @@ SV sv_new(const char *source, size_t length)
 {
     return (SV) {
         .source = source,
-        .length = length
+            .length = length
     };
 }
 
@@ -191,7 +190,7 @@ SV sv_cstr(const char *source)
 {
     return (SV) {
         .source = source,
-        .length = strlen(source)
+            .length = strlen(source)
     };
 }
 
@@ -305,48 +304,52 @@ int sv_find(SV sv, char ch)
     return p ? p - sv.source : -1;
 }
 
-bool sv_parse_int(SV *sv, int *dest)
+size_t sv_parse_int(SV *sv, int *dest)
 {
-    if (sscanf(sv->source, "%d", dest) == 1) {
-        const size_t length = snprintf(NULL, 0, "%d", *dest);
-        sv->source += length;
-        sv->length -= length;
-        return true;
-    }
-    return false;
+    char *endp = NULL;
+    *dest = strtol(sv->source, &endp, 10);
+
+    const size_t length = endp - sv->source;
+    sv->source = endp;
+    sv->length -= length;
+
+    return length;
 }
 
-bool sv_parse_long(SV *sv, long *dest)
+size_t sv_parse_long(SV *sv, long *dest)
 {
-    if (sscanf(sv->source, "%ld", dest) == 1) {
-        const size_t length = snprintf(NULL, 0, "%ld", *dest);
-        sv->source += length;
-        sv->length -= length;
-        return true;
-    }
-    return false;
+    char *endp = NULL;
+    *dest = strtol(sv->source, &endp, 10);
+
+    const size_t length = endp - sv->source;
+    sv->source = endp;
+    sv->length -= length;
+
+    return length;
 }
 
-bool sv_parse_float(SV *sv, float *dest)
+size_t sv_parse_float(SV *sv, float *dest)
 {
-    if (sscanf(sv->source, "%f", dest) == 1) {
-        const size_t length = snprintf(NULL, 0, "%f", *dest);
-        sv->source += length;
-        sv->length -= length;
-        return true;
-    }
-    return false;
+    char *endp = NULL;
+    *dest = strtof(sv->source, &endp);
+
+    const size_t length = endp - sv->source;
+    sv->source = endp;
+    sv->length -= length;
+
+    return length;
 }
 
-bool sv_parse_double(SV *sv, double *dest)
+size_t sv_parse_double(SV *sv, double *dest)
 {
-    if (sscanf(sv->source, "%lf", dest) == 1) {
-        const size_t length = snprintf(NULL, 0, "%lf", *dest);
-        sv->source += length;
-        sv->length -= length;
-        return true;
-    }
-    return false;
+    char *endp = NULL;
+    *dest = strtod(sv->source, &endp);
+
+    const size_t length = endp - sv->source;
+    sv->source = endp;
+    sv->length -= length;
+
+    return length;
 }
 
 bool sv_eq(SV a, SV b)
@@ -365,7 +368,7 @@ bool sv_suffix(SV sv, SV suffix)
 {
     return sv.length >= suffix.length &&
         memcmp(sv.source + sv.length - suffix.length,
-               suffix.source, suffix.length) == 0;
+                suffix.source, suffix.length) == 0;
 }
 
 SV sv_read_file(const char *path)
@@ -406,7 +409,7 @@ SV sv_read_file(const char *path)
 
 void sv_advance(SV *sv, size_t count)
 {
-    if (count < sv->length) {
+    if (count <= sv->length) {
         sv->source += count;
         sv->length -= count;
     }
