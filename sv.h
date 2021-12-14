@@ -49,6 +49,7 @@ typedef struct {
 
 #define SVFmt "%.*s"
 #define SVArg(s) (int) s.length, s.source
+#define SVStatic(s) (SV) {.source = s, .length = sizeof(s) - 1}
 
 // Create a string view.
 SV sv_new(const char *source, size_t length);
