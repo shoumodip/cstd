@@ -294,7 +294,7 @@ SV sv_trim(SV sv, char ch)
     return sv_ltrim(sv_rtrim(sv, ch), ch);
 }
 
-SV sv_predicate(SV sv, bool (*predicate)(char ch))
+SV sv_trim_pred(SV sv, bool (*predicate)(char ch))
 {
     return sv_ltrim_pred(sv_rtrim_pred(sv, predicate), predicate);
 }
