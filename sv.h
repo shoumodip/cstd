@@ -52,7 +52,7 @@ typedef struct {
 #define SVStatic(s) (SV) {.source = s, .length = sizeof(s) - 1}
 
 // Create a string view.
-SV sv_new(const char *source, size_t length);
+SV sv(const char *source, size_t length);
 
 // Create a string view from a C-string, with automatic length
 // determination using strlen()
@@ -144,21 +144,21 @@ size_t sv_parse_double(SV *sv, double *dest);
 //   sv_eq(sv_cstr("foo"), sv_cstr("fo"))  => false
 bool sv_eq(SV a, SV b);
 
-// Check if PREFIX is the prefix of SV.
+// Check if SV starts with PREFIX.
 //
 // Examples:
-//   sv_prefix(sv_cstr("foo bar"), sv_cstr("foo")) => true
-//   sv_prefix(sv_cstr("foo"), sv_cstr("foo"))     => true
-//   sv_prefix(sv_cstr("foo bar"), sv_cstr("bar")) => false
-bool sv_prefix(SV sv, SV prefix);
+//   sv_starts_with(sv_cstr("foo bar"), sv_cstr("foo")) => true
+//   sv_starts_with(sv_cstr("foo"), sv_cstr("foo"))     => true
+//   sv_starts_with(sv_cstr("foo bar"), sv_cstr("bar")) => false
+bool sv_starts_with(SV sv, SV prefix);
 
-// Like sv_suffix(), checks for suffixes instead.
+// Check if SV ends with PREFIX.
 //
 // Examples:
-//   sv_suffix(sv_cstr("foo bar"), sv_cstr("bar")) => true
-//   sv_suffix(sv_cstr("foo"), sv_cstr("foo"))     => true
-//   sv_suffix(sv_cstr("foo bar"), sv_cstr("foo")) => false
-bool sv_suffix(SV sv, SV suffix);
+//   sv_ends_with(sv_cstr("foo bar"), sv_cstr("bar")) => true
+//   sv_ends_with(sv_cstr("foo"), sv_cstr("foo"))     => true
+//   sv_ends_with(sv_cstr("foo bar"), sv_cstr("foo")) => false
+bool sv_ends_with(SV sv, SV suffix);
 
 // Find the index of CH in SV. Returns -1 if not found.
 //
@@ -179,7 +179,7 @@ void sv_advance(SV *sv, size_t count);
 
 ///////////////////////////////////////////////////////
 
-SV sv_new(const char *source, size_t length)
+SV sv(const char *source, size_t length)
 {
     return (SV) {
         .source = source,
@@ -359,13 +359,13 @@ bool sv_eq(SV a, SV b)
         memcmp(a.source, b.source, a.length) == 0;
 }
 
-bool sv_prefix(SV sv, SV prefix)
+bool sv_starts_with(SV sv, SV prefix)
 {
     return sv.length >= prefix.length &&
         memcmp(sv.source, prefix.source, prefix.length) == 0;
 }
 
-bool sv_suffix(SV sv, SV suffix)
+bool sv_ends_with(SV sv, SV suffix)
 {
     return sv.length >= suffix.length &&
         memcmp(sv.source + sv.length - suffix.length,
@@ -405,7 +405,7 @@ SV sv_read_file(const char *path)
     }
 
     fclose(file);
-    return sv_new(contents, size);
+    return sv(contents, size);
 }
 
 void sv_advance(SV *sv, size_t count)
