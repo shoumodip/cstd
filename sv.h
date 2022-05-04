@@ -48,7 +48,7 @@ typedef struct {
 //   printf("%.*s", (int) sv_split(s, ' ').length, sv_split(s, ' ').source);
 
 #define SVFmt "%.*s"
-#define SVArg(s) (int) s.length, s.source
+#define SVArg(s) (int) (s).length, (s).source
 #define SVStatic(s) (SV) {.source = s, .length = sizeof(s) - 1}
 
 // Create a string view.
