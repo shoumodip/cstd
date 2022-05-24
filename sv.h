@@ -166,19 +166,9 @@ bool sv_ends_with(SV sv, SV suffix);
 //   sv_find(sv_cstr("foo"), "o") => 1
 //   sv_find(sv_cstr("foo"), "a") => -1
 int sv_find(SV sv, char ch);
+#endif // SV_H
 
-// Read a file into a string view.
-//
-// Examples:
-//   SV contents = sv_read_file("foo.log");
-//   printf(SVFmt, SVArg(contents));
-//   free((char *) contents);
-SV sv_read_file(const char *path);
-
-void sv_advance(SV *sv, size_t count);
-
-///////////////////////////////////////////////////////
-
+#ifdef SV_IMPLEMENTATION
 SV sv(const char *source, size_t length)
 {
     return (SV) {
@@ -372,48 +362,4 @@ bool sv_ends_with(SV sv, SV suffix)
                 suffix.source, suffix.length) == 0;
 }
 
-SV sv_read_file(const char *path)
-{
-    FILE *file = fopen(path, "r");
-    if (!file) {
-        fprintf(stderr, "error: could not read file '%s'\n", path);
-        exit(1);
-    }
-
-    if (fseek(file, 0, SEEK_END) < 0) {
-        fprintf(stderr, "error: could not read file '%s'\n", path);
-        exit(1);
-    }
-
-    long size = ftell(file);
-    if (size < 0) {
-        fprintf(stderr, "error: could not read file '%s'\n", path);
-        exit(1);
-    }
-
-    rewind(file);
-
-    char *contents = malloc(size);
-    if (!contents) {
-        fprintf(stderr, "error: could not allocate memory for file '%s'\n", path);
-        exit(1);
-    }
-
-    if (fread(contents, sizeof(char), size, file) != (size_t) size) {
-        fprintf(stderr, "error: could not read file '%s'\n", path);
-        exit(1);
-    }
-
-    fclose(file);
-    return sv(contents, size);
-}
-
-void sv_advance(SV *sv, size_t count)
-{
-    if (count <= sv->length) {
-        sv->source += count;
-        sv->length -= count;
-    }
-}
-
-#endif // SV_H
+#endif // SV_IMPLEMENTATION
