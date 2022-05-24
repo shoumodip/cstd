@@ -61,37 +61,37 @@ SV sv_cstr(const char *data);
 // Trim all 'CH' characters from the left side of the string view.
 //
 // Example:
-//   sv_ltrim(sv_cstr("  foo  ", ' '))            => "foo  "
+//   sv_ltrim(SVStatic("  foo  "), ' ')            => "foo  "
 SV sv_ltrim(SV sv, char ch);
 
 // Like sv_ltrim() but takes a predicate function.
 //
 // Example:
-//   sv_ltrim_pred(sv_cstr("69foo69", isdigit))   => "foo69"
+//   sv_ltrim_pred(SVStatic("69foo69"), isdigit)   => "foo69"
 SV sv_ltrim_pred(SV sv, bool (*predicate)(char ch));
 
 // Like sv_ltrim() but from the right.
 //
 // Example:
-//   sv_rtrim(sv_cstr("  foo  ", ' '))            => "  foo"
+//   sv_rtrim(SVStatic("  foo  "), ' ')            => "  foo"
 SV sv_rtrim(SV sv, char ch);
 
 // Like sv_ltrim_pred() but from the right.
 //
 // Example:
-//   sv_rtrim_pred(sv_cstr("69foo69", isdigit))   => "69foo"
+//   sv_rtrim_pred(SVStatic("69foo69"), isdigit)   => "69foo"
 SV sv_rtrim_pred(SV sv, bool (*predicate)(char ch));
 
 // Combination of sv_ltrim() and sv_rtrim().
 //
 // Example:
-//   sv_trim(sv_cstr("  foo  ", ' '))             => "foo"
+//   sv_trim(SVStatic("  foo  "), ' ')             => "foo"
 SV sv_trim(SV sv, char ch);
 
 // Combination of sv_ltrim_pred() and sv_rtrim_pred().
 //
 // Example:
-//   sv_trim_pred(sv_cstr("69foo69", isdigit))    => "foo"
+//   sv_trim_pred(SVStatic("69foo69"), isdigit)    => "foo"
 SV sv_trim_pred(SV sv, bool (*predicate)(char ch));
 
 // Split a string view by the DELIM character.
@@ -99,7 +99,7 @@ SV sv_trim_pred(SV sv, bool (*predicate)(char ch));
 // character. The original SV is changed to after the character.
 //
 // Example:
-//   SV a = sv_cstr("foo bar")
+//   SV a = SVStatic("foo bar")
 //   sv_split(&a, ' ')          => "foo"
 //   a                          => "bar"
 SV sv_split(SV *sv, char delim);
@@ -107,7 +107,7 @@ SV sv_split(SV *sv, char delim);
 // Like sv_split() but splits by a predicate function.
 //
 // Example:
-//   SV a = sv_cstr("foo0bar")
+//   SV a = SVStatic("foo0bar")
 //   sv_split_pred(&a, isdigit) => "foo"
 //   a                          => "bar"
 SV sv_split_pred(SV *sv, bool (*predicate)(char ch));
@@ -115,7 +115,7 @@ SV sv_split_pred(SV *sv, bool (*predicate)(char ch));
 // Parse an int and advance the SV.
 //
 // Example:
-//   SV a = sv_cstr("69text")
+//   SV a = SVStatic("69text")
 //   int n
 //
 //   vs_parse_int(&a, &n) => 2
@@ -138,34 +138,40 @@ size_t sv_parse_double(SV *sv, double *dest);
 // Check if two SVs are equal.
 //
 // Examples:
-//   sv_eq(sv_cstr("foo"), sv_cstr("foo")) => true
-//   sv_eq(sv_cstr("foo"), sv_cstr("Foo")) => false
-//   sv_eq(sv_cstr("foo"), sv_cstr("bar")) => false
-//   sv_eq(sv_cstr("foo"), sv_cstr("fo"))  => false
+//   sv_eq(SVStatic("foo"), SVStatic("foo")) => true
+//   sv_eq(SVStatic("foo"), SVStatic("Foo")) => false
+//   sv_eq(SVStatic("foo"), SVStatic("bar")) => false
+//   sv_eq(SVStatic("foo"), SVStatic("fo"))  => false
 bool sv_eq(SV a, SV b);
 
 // Check if SV starts with PREFIX.
 //
 // Examples:
-//   sv_starts_with(sv_cstr("foo bar"), sv_cstr("foo")) => true
-//   sv_starts_with(sv_cstr("foo"), sv_cstr("foo"))     => true
-//   sv_starts_with(sv_cstr("foo bar"), sv_cstr("bar")) => false
+//   sv_starts_with(SVStatic("foo bar"), SVStatic("foo")) => true
+//   sv_starts_with(SVStatic("foo"), SVStatic("foo"))     => true
+//   sv_starts_with(SVStatic("foo bar"), SVStatic("bar")) => false
 bool sv_starts_with(SV sv, SV prefix);
 
 // Check if SV ends with PREFIX.
 //
 // Examples:
-//   sv_ends_with(sv_cstr("foo bar"), sv_cstr("bar")) => true
-//   sv_ends_with(sv_cstr("foo"), sv_cstr("foo"))     => true
-//   sv_ends_with(sv_cstr("foo bar"), sv_cstr("foo")) => false
+//   sv_ends_with(SVStatic("foo bar"), SVStatic("bar")) => true
+//   sv_ends_with(SVStatic("foo"), SVStatic("foo"))     => true
+//   sv_ends_with(SVStatic("foo bar"), SVStatic("foo")) => false
 bool sv_ends_with(SV sv, SV suffix);
 
 // Find the index of CH in SV. Returns -1 if not found.
 //
 // Examples:
-//   sv_find(sv_cstr("foo"), "o") => 1
-//   sv_find(sv_cstr("foo"), "a") => -1
+//   sv_find(SVStatic("foo"), "o") => 1
+//   sv_find(SVStatic("foo"), "a") => -1
 int sv_find(SV sv, char ch);
+
+// Advance the SV by count.
+//
+// Examples:
+//   sv_advance(SVStatic("foobar"), 2) => "obar"
+void sv_advance(SV *sv, size_t count);
 #endif // SV_H
 
 #ifdef SV_IMPLEMENTATION
@@ -350,6 +356,14 @@ bool sv_ends_with(SV sv, SV suffix)
     return sv.size >= suffix.size &&
         memcmp(sv.data + sv.size - suffix.size,
                suffix.data, suffix.size) == 0;
+}
+
+void sv_advance(SV *sv, size_t count)
+{
+    if (count <= sv->size) {
+        sv->data += count;
+        sv->size -= count;
+    }
 }
 
 #endif // SV_IMPLEMENTATION
