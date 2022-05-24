@@ -29,8 +29,8 @@
 
 // String Views - An immutable "view" into a char*
 typedef struct {
-    const char *source;
-    size_t length;
+    const char *data;
+    size_t size;
 } SV;
 
 // Formatting macros for SV:
@@ -45,18 +45,18 @@ typedef struct {
 //
 // The above code will split the string view *twice* because of
 // the macro expansion. Essentially it becomes:
-//   printf("%.*s", (int) sv_split(s, ' ').length, sv_split(s, ' ').source);
+//   printf("%.*s", (int) sv_split(s, ' ').size, sv_split(s, ' ').data);
 
 #define SVFmt "%.*s"
-#define SVArg(s) (int) (s).length, (s).source
-#define SVStatic(s) (SV) {.source = s, .length = sizeof(s) - 1}
+#define SVArg(s) (int) (s).size, (s).data
+#define SVStatic(s) (SV) {.data = s, .size = sizeof(s) - 1}
 
 // Create a string view.
-SV sv(const char *source, size_t length);
+SV sv(const char *data, size_t size);
 
-// Create a string view from a C-string, with automatic length
+// Create a string view from a C-string, with automatic size
 // determination using strlen()
-SV sv_cstr(const char *source);
+SV sv_cstr(const char *data);
 
 // Trim all 'CH' characters from the left side of the string view.
 //
@@ -169,68 +169,58 @@ int sv_find(SV sv, char ch);
 #endif // SV_H
 
 #ifdef SV_IMPLEMENTATION
-SV sv(const char *source, size_t length)
+SV sv(const char *data, size_t size)
 {
-    return (SV) {
-        .source = source,
-            .length = length
-    };
+    return (SV) {.data = data, .size = size};
 }
 
-SV sv_cstr(const char *source)
+SV sv_cstr(const char *data)
 {
-    return (SV) {
-        .source = source,
-            .length = strlen(source)
-    };
+    return (SV) {.data = data, .size = strlen(data)};
 }
 
 SV sv_split(SV *sv, char delim)
 {
-    if (!sv) return (SV) {0};
-
     SV result = *sv;
 
-    for (size_t i = 0; i < sv->length; ++i) {
-        if (sv->source[i] == delim) {
-            result.length = i;
-            sv->source += i + 1;
-            sv->length -= i + 1;
+    for (size_t i = 0; i < sv->size; ++i) {
+        if (sv->data[i] == delim) {
+            result.size = i;
+            sv->data += i + 1;
+            sv->size -= i + 1;
             return result;
         }
     }
 
-    sv->source += sv->length;
-    sv->length = 0;
+    sv->data += sv->size;
+    sv->size = 0;
     return result;
 }
 
 SV sv_split_pred(SV *sv, bool (*predicate)(char ch))
 {
-    if (!sv) return (SV) {0};
-
     SV result = *sv;
 
-    for (size_t i = 0; i < sv->length; ++i) {
-        if (predicate(sv->source[i])) {
-            result.length = i;
-            sv->source += i + 1;
-            sv->length -= i + 1;
+    for (size_t i = 0; i < sv->size; ++i) {
+        if (predicate(sv->data[i])) {
+            result.size = i;
+            sv->data += i + 1;
+            sv->size -= i + 1;
             return result;
         }
     }
 
-    sv->source += sv->length;
-    sv->length = 0;
+    sv->data += sv->size;
+    sv->size = 0;
     return result;
 }
 
 SV sv_ltrim(SV sv, char ch)
 {
-    for (size_t i = 0; i < sv.length; ++i) {
-        if (sv.source[i] != ch) {
-            sv.source += i;
-            sv.length -= i;
+    for (size_t i = 0; i < sv.size; ++i) {
+        if (sv.data[i] != ch) {
+            sv.data += i;
+            sv.size -= i;
             break;
         }
     }
@@ -240,10 +230,10 @@ SV sv_ltrim(SV sv, char ch)
 
 SV sv_ltrim_pred(SV sv, bool (*predicate)(char ch))
 {
-    for (size_t i = 0; i < sv.length; ++i) {
-        if (!predicate(sv.source[i])) {
-            sv.source += i;
-            sv.length -= i;
+    for (size_t i = 0; i < sv.size; ++i) {
+        if (!predicate(sv.data[i])) {
+            sv.data += i;
+            sv.size -= i;
             break;
         }
     }
@@ -253,10 +243,10 @@ SV sv_ltrim_pred(SV sv, bool (*predicate)(char ch))
 
 SV sv_rtrim(SV sv, char ch)
 {
-    if (sv.length) {
-        for (size_t i = sv.length; i > 0; --i) {
-            if (sv.source[i - 1] != ch) {
-                sv.length = i;
+    if (sv.size) {
+        for (size_t i = sv.size; i > 0; --i) {
+            if (sv.data[i - 1] != ch) {
+                sv.size = i;
                 break;
             }
         }
@@ -267,10 +257,10 @@ SV sv_rtrim(SV sv, char ch)
 
 SV sv_rtrim_pred(SV sv, bool (*predicate)(char ch))
 {
-    if (sv.length) {
-        for (size_t i = sv.length; i > 0; --i) {
-            if (!predicate(sv.source[i - 1])) {
-                sv.length = i;
+    if (sv.size) {
+        for (size_t i = sv.size; i > 0; --i) {
+            if (!predicate(sv.data[i - 1])) {
+                sv.size = i;
                 break;
             }
         }
@@ -291,75 +281,75 @@ SV sv_trim_pred(SV sv, bool (*predicate)(char ch))
 
 int sv_find(SV sv, char ch)
 {
-    const char *p = memchr(sv.source, ch, sv.length);
-    return p ? p - sv.source : -1;
+    const char *p = memchr(sv.data, ch, sv.size);
+    return p ? p - sv.data : -1;
 }
 
 size_t sv_parse_int(SV *sv, int *dest)
 {
     char *endp = NULL;
-    *dest = strtol(sv->source, &endp, 10);
+    *dest = strtol(sv->data, &endp, 10);
 
-    const size_t length = endp - sv->source;
-    sv->source = endp;
-    sv->length -= length;
+    const size_t size = endp - sv->data;
+    sv->data = endp;
+    sv->size -= size;
 
-    return length;
+    return size;
 }
 
 size_t sv_parse_long(SV *sv, long *dest)
 {
     char *endp = NULL;
-    *dest = strtol(sv->source, &endp, 10);
+    *dest = strtol(sv->data, &endp, 10);
 
-    const size_t length = endp - sv->source;
-    sv->source = endp;
-    sv->length -= length;
+    const size_t size = endp - sv->data;
+    sv->data = endp;
+    sv->size -= size;
 
-    return length;
+    return size;
 }
 
 size_t sv_parse_float(SV *sv, float *dest)
 {
     char *endp = NULL;
-    *dest = strtof(sv->source, &endp);
+    *dest = strtof(sv->data, &endp);
 
-    const size_t length = endp - sv->source;
-    sv->source = endp;
-    sv->length -= length;
+    const size_t size = endp - sv->data;
+    sv->data = endp;
+    sv->size -= size;
 
-    return length;
+    return size;
 }
 
 size_t sv_parse_double(SV *sv, double *dest)
 {
     char *endp = NULL;
-    *dest = strtod(sv->source, &endp);
+    *dest = strtod(sv->data, &endp);
 
-    const size_t length = endp - sv->source;
-    sv->source = endp;
-    sv->length -= length;
+    const size_t size = endp - sv->data;
+    sv->data = endp;
+    sv->size -= size;
 
-    return length;
+    return size;
 }
 
 bool sv_eq(SV a, SV b)
 {
-    return a.length == b.length &&
-        memcmp(a.source, b.source, a.length) == 0;
+    return a.size == b.size &&
+        memcmp(a.data, b.data, a.size) == 0;
 }
 
 bool sv_starts_with(SV sv, SV prefix)
 {
-    return sv.length >= prefix.length &&
-        memcmp(sv.source, prefix.source, prefix.length) == 0;
+    return sv.size >= prefix.size &&
+        memcmp(sv.data, prefix.data, prefix.size) == 0;
 }
 
 bool sv_ends_with(SV sv, SV suffix)
 {
-    return sv.length >= suffix.length &&
-        memcmp(sv.source + sv.length - suffix.length,
-                suffix.source, suffix.length) == 0;
+    return sv.size >= suffix.size &&
+        memcmp(sv.data + sv.size - suffix.size,
+               suffix.data, suffix.size) == 0;
 }
 
 #endif // SV_IMPLEMENTATION
